@@ -59,12 +59,13 @@ class SimpleModelSelector:
 class SimplePDFProcessor:
     """Handle PDF processing and chunking"""
 
-    def __init__(self,chunk_size=CHUNK_SIZE,chunk_overlap==Chunk_OVERLAP):
+    def __init__(self,chunk_size=CHUNK_SIZE,chunk_overlap=Chunk_OVERLAP):
         self.chucnk_size = chunk_size
         self.chunk_overlap = chunk_overlap
     
     def read_pdf(self,pdf_file):
-    """ Read pdf and extract text"""
+    
+        """Extract text from PDF file"""
         reader = PyPDF2.PdfReader(pdf_file)
         text = ""
         for page in reader.pages:
