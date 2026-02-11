@@ -12,7 +12,7 @@ load_dotenv()
 
 # Constants
 CHUNK_SIZE = 1000
-Chunk_OVERLAP = 200
+CHUNK_OVERLAP = 200
 
 
 class SimpleModelSelector:
@@ -44,15 +44,15 @@ class SimpleModelSelector:
         # Select LLM
         llm =st.sidebar.radio(
             "Choose LLm Model:",
-            option=list(self.llm_models.key()),
-            format_func = lambda x: self.llm_model[x],     
+            options=list(self.llm_models.keys()),
+            format_func=lambda x: self.llm_models[x],
         )
 
         # Select Embeddings
         embedding = st.sidebar.radio(
             "Chose Embedding Model:",
-            option=list(self.embedding_models.keys()),
-            format_function = lambda x: self.embedding_models[x]["name"],
+            options=list(self.embedding_models.keys()),
+            format_func=lambda x: self.embedding_models[x]["name"],
         )
 
         return llm, embedding
@@ -60,8 +60,8 @@ class SimpleModelSelector:
 class SimplePDFProcessor:
     """Handle PDF processing and chunking"""
 
-    def __init__(self,chunk_size=CHUNK_SIZE,chunk_overlap=Chunk_OVERLAP):
-        self.chucnk_size = chunk_size
+    def __init__(self,chunk_size=CHUNK_SIZE,chunk_overlap=CHUNK_OVERLAP):
+        self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
     
     def read_pdf(self,pdf_file):
@@ -116,30 +116,28 @@ class SimpleRAGSystem:
         self.embedding_model = embedding_model
         self.llm_model = llm_model
 
+        # Initialize ChromaDB
+        self.db = chromadb.PersistentClient(path="./chroma_db")
 
-    # Initialize ChromaDB
-    self.db = chromadb.PersistentClient(path="./chroma_db")
+        # Setup embedding function based on model
+        self.setup_embedding_function()
 
-    # Setup embedding Funtion base on model
-    self.setup_embedding_function()
+        # Setup LLM
+        if llm_model == "openai":
+            self.llm = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        else:
+            self.llm = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
 
-    # Setup LLM
-    if llm_model == "openai":
-        self.llm = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    else:
-        self.llm = OpenAI(base_url ="http://localhost:11434/v1",api_key="ollama")
-
-    # Get or create collection with proper handling
-    self.collection = self.setup_collection()
+        # Get or create collection with proper handling
+        self.collection = self.setup_collection()
 
     def setup_embedding_function(self):
         """Setup the appropriate embedding function"""
         try:
             if self.embedding_model == "openai":
                 self.embedding_fn = embedding_functions.OpenAIEmbeddingFunction(
-                    api_key ="ollama",
-                    api_base ="http://localhost:11434/v1",
-                    model_name="nomic-embed-text",
+                    api_key=os.getenv("OPENAI_API_KEY"),
+                    model_name="text-embedding-3-small",
                 )
             elif self.embedding_model == "nomic":
                 # For Nomic embedding via Ollama
@@ -165,7 +163,7 @@ class SimpleRAGSystem:
         try:
             try:
                 collection = self.db.get_collection(
-                    name=collection_name, embedding_functions=self.embedding_fn
+                    name=collection_name, embedding_function=self.embedding_fn
                 )
                 st.info(
                     f"Using existing collection for {self.embedding_model} embeddings"
@@ -197,7 +195,7 @@ class SimpleRAGSystem:
             self.collection.add(
                 ids=[chunk["id"] for chunk in chunks],
                 documents = [chunk["text"] for chunk in chunks],
-                metadatas = [chunks["metadata"] for chunk in chunks],
+                metadatas=[chunk["metadata"] for chunk in chunks],
                 
             )
             return True
@@ -209,7 +207,7 @@ class SimpleRAGSystem:
         """Query documents and return relevant chunks"""
         try:
             # Ensure Collection exists
-            if not self.coleection:
+            if not self.collection:
                 raise ValueError("No collection available")
 
             results = self.collection.query(query_texts=[query], n_results=n_results)
