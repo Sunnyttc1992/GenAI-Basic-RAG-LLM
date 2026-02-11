@@ -91,10 +91,10 @@ class SimplePDFProcessor:
             # try to break at sentence end
             
             if end < len(text):
-                last_period != -1:
-                chunk = chunk[: last_period + 1]
-                end = start + last_period + 1
-
+                last_period = chunk.rfind(".")
+                if last_period != -1:
+                    chunk = chunk[: last_period + 1]
+                    end = start + last_period + 1
             chunks.append(
                 {
                     "id": str(uuid.uuid4()),  # cdefield24482kuy
