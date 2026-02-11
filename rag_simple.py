@@ -2,7 +2,7 @@ import streamlit as st
 import chromadb
 from chromadb.utils import embedding_functions
 from openai import OpenAI
-import od
+import os
 from dotenv import load_dotenv
 import PyPDF2
 import uuid
